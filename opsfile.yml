@@ -1,0 +1,73 @@
+version: 3
+
+
+tasks:
+
+  new:
+    desc: new 
+
+  cli:
+    desc: cli
+    cmds:
+    - echo cli
+    
+  llm:
+    desc: llm
+    cmds:
+    - echo "llm"
+
+  new:
+    silent: true
+    desc: generate a new python action
+    vars:
+       ACTION: 
+         sh: echo  "{{._action_}}" | cut -d/ -f2
+       PACKAGE: 
+         sh: echo  "{{._action_}}" | cut -d/ -f1
+    env:
+       ACTION: "{{.ACTION}}"
+       PACKAGE: "{{.PACKAGE}}"
+       DIR:  "packages/{{.PACKAGE}}/{{.ACTION}}"
+       FILE: "packages/{{.PACKAGE}}/{{.ACTION}}/{{.ACTION}}.py"
+    cmds:
+    #- test ! -e "$OPS_PWD/$FILE" || die "file already exists"
+    - echo $ACTION
+    - echo $PACKAGE
+    - echo $DIR
+    - echo $FILE
+    - |
+      mkdir -p $OPS_PWD/tests/$PACKAGE
+      mkdir -p $OPS_PWD/$DIR
+    - |
+      cat <<EOF >$OPS_PWD/$FILE
+      def $ACTION(args):
+        return { "output": "$ACTION" }
+      EOF
+    - |
+      cat <<EOF >$OPS_PWD/$DIR/__main__.py
+      #--kind python:default
+      #--web true
+      import $ACTION
+      def main(args):
+        return { "body": $ACTION.$ACTION(args) }
+      EOF
+    - |
+      cat <<EOF >$OPS_PWD/tests/$PACKAGE/test_${ACTION}.py
+      import sys 
+      sys.path.append("$DIR")
+      import $ACTION
+      
+      def test_$ACTION():
+          res = $ACTION.$ACTION({})
+          assert res["output"] == "$ACTION"
+      EOF
+    - |
+      cat <<EOF >$OPS_PWD/tests/$PACKAGE/test_${ACTION}_int.py
+      import os, requests as req
+      def test_$ACTION():
+          url = os.environ.get("OPSDEV_HOST") + "/api/my/$PACKAGE/$ACTION"
+          res = req.get(url).json()
+          assert res.get("output") == "$ACTION"
+      EOF
+
+
