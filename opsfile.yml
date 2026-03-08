@@ -2,19 +2,54 @@ version: 3
 
 
 tasks:
-
-  new:
-    desc: new 
-
-  cli:
-    desc: cli
-    cmds:
-    - echo cli
     
   llm:
+    silent: true
     desc: llm
     cmds:
-    - echo "llm"
+    - test -n "OLLAMA_HOST" || die "ollama host not set, run ollama-config"
+    - | 
+      arr={{._args_}}
+      llm "${arr[@]}"
+
+  ollama-config:
+    silent: true
+    desc: configure ollama
+    cmds:
+    - |
+      if test -n "{{._host_}}"
+      then
+        config OLLAMA_HOST="{{._host_}}"
+      else
+        echo -n "Please enter your Ollama host (e.g. http://localhost:11434 or https://ollama.com):"
+        read "OLLAMA_HOST"
+        config OLLAMA_HOST="$(echo $OLLAMA_HOST | tr -d '\r')"
+      fi
+    - |
+      if test -n "{{._key_}}"
+      then
+        config OLLAMA_HEADERS="Authorization=Bearer {{._key_}}"
+      else
+        echo -n "Please enter your Ollama key (leave empty for local ollama):"
+        read "OLLAMA_TOKEN"
+        config OLLAMA_HEADERS="Authorization=Bearer $(echo "$OLLAMA_TOKEN" | tr -d '\r')"
+      fi
+    - |
+      if test -n "{{._model_}}"
+      then
+        echo "OLLAMA_HOST set to {{._host_}}"
+      else
+        echo "Ollama Models:"
+        if ops aid llm models | rg "^Ollama:"
+        then
+          echo -n "Please enter your Ollama default model:"
+          read "OLLAMA_MODEL"
+          ops aid llm models default $(echo "$OLLAMA_MODEL" | tr -d '\r')
+        else 
+          echo "No Ollama models found, skipping default model configuration"
+        fi
+      fi
+
 
   new:
     silent: true

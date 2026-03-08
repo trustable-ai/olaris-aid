@@ -21,34 +21,24 @@ tasks:
      - extract "{{.FILE}}" "{{.OUT}}{{.EXE}}"
      - remove "{{.FILE}}"
   
-  himalaya:
-    desc: download himalaya
+  llm:
+    desc: install llm with uv
+    env:
+      UV_TOOL_BIN_DIR: 
+        sh: echo "$OPS_BIN"
+      UV_TOOL_DIR:
+        sh: echo "$(dirname $OPS_BIN)/lib" 
     vars:
-      VERSION: "1.1.0"
-      SUFFIX:
-        sh: |
-            case "{{.OS}}-{{.ARCH}}" in
-            linux-amd64) echo "x86_64-linux" ;;
-            linux-arm64) echo "aarch64-linux" ;;
-            darwin-amd64) echo "x86_64-darwin" ;;
-            darwin-arm64) echo "aarch64-darwin" ;; 
-            windows-*) echo "x86_64-windows" ;;
-            *) echo "unknown" ;;
-            esac
-            #https://github.com/pimalaya/himalaya/releases/download/v1.1.0/himalaya.aarch64-darwin.tgz
-      URL:  "https://github.com/pimalaya/himalaya/releases/download/v{{.VERSION}}/himalaya.{{.SUFFIX}}.tgz"
-      FILE: "{{base .URL}}"
-      OUT: himalaya
+      VERSION: "0.28-2"
     cmds:
-    - task: download-and-extract
-      vars:
-        URL: "{{.URL}}"
-        FILE: "{{.FILE}}"
-        OUT: himalaya
+    - >
+       uv tool install 
+       llm=={{.VERSION | splitList "-" | first}} 
+       --force 
+    - llm install llm-ollama
   
-
   all:
-    - task: himalaya
+    - task: llm
     
   test:
     vars:
